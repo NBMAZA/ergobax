@@ -311,11 +311,11 @@ export default function CondicoesAmbientais(){
  
  </section>:null)}
  </div></div>
- <h2>Riscos gerais já vinculados</h2>
- <p style={{fontSize:13,color:'#53657a'}}>Os riscos existentes sem ponto específico permanecem preservados. Para novos riscos, utilize “+ Adicionar Risco” dentro do ponto de coleta correspondente.</p>
+ <details style={{border:'1px solid #cbd5e1',borderRadius:10,padding:14,margin:'16px 0'}}><summary style={{fontWeight:700,cursor:'pointer'}}>Riscos anteriores sem ponto de coleta ({riscosSelecionados.length})</summary>
+ <p style={{fontSize:13,color:'#53657a'}}>Esta seção reúne vínculos anteriores sem ponto específico. Os registros permanecem preservados. Para novos riscos, utilize “+ Adicionar Risco” no ponto de coleta correspondente.</p>
  <div style={{marginBottom:12,fontSize:12,color:'#53657a'}}>{riscosSelecionados.length} risco(s) geral(is) vinculado(s)</div>
  {!editandoId&&<p style={{fontSize:12,color:'#53657a'}}>Salve primeiro a avaliação ambiental para incluir riscos.</p>}
- {riscosSelecionados.length===0?<p>Nenhum risco vinculado a esta avaliação.</p>:<div style={{display:'grid',gap:8,marginBottom:16}}>{riscosSelecionados.map(id=>{const risco=riscos.find(r=>r.id===id);return <div key={id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,border:'1px solid #cbd5e1',padding:10,borderRadius:8}}><span>{risco?.titulo||'Risco cadastrado'}</span><button type="button" disabled={situacao==='concluida'} onClick={()=>setRiscosSelecionados(a=>a.filter(x=>x!==id))}>Remover vínculo</button></div>})}</div>}
+ {riscosSelecionados.length===0?<p>Nenhum risco vinculado a esta avaliação.</p>:<div style={{display:'grid',gap:8,marginBottom:16}}>{riscosSelecionados.map(id=>{const risco=riscos.find(r=>r.id===id);return <div key={id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,border:'1px solid #cbd5e1',padding:10,borderRadius:8}}><span>{risco?.titulo||'Risco cadastrado'} <small style={{color:'#64748b'}}>({id.slice(0,8)})</small></span><button type="button" title="Desvincula da avaliação ao salvar; não exclui o cadastro do risco" disabled={situacao==='concluida'} onClick={()=>setRiscosSelecionados(a=>a.filter(x=>x!==id))}>Remover vínculo</button></div>})}</div>}
  {seletorRiscoAberto&&<div role="presentation" style={{position:'fixed',inset:0,background:'rgba(15,23,42,.55)',display:'flex',justifyContent:'center',alignItems:'center',padding:16,zIndex:1000}} onClick={()=>!criandoRisco&&setSeletorRiscoAberto(false)}>
  <div role="dialog" aria-modal="true" aria-label="Incluir novo risco" onClick={e=>e.stopPropagation()} style={{background:'#fff',color:'#0f172a',borderRadius:12,padding:20,width:'100%',maxWidth:640,maxHeight:'80vh',overflowY:'auto'}}>
  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}><h3>Incluir novo risco</h3><button type="button" disabled={criandoRisco} onClick={()=>setSeletorRiscoAberto(false)}>Fechar</button></div>
@@ -328,7 +328,8 @@ export default function CondicoesAmbientais(){
  </div>
  <div style={{display:'flex',gap:10,marginTop:14}}><button type="button" disabled={criandoRisco} onClick={incluirRisco}>{criandoRisco?'Salvando...':'Salvar e vincular risco'}</button><button type="button" disabled={criandoRisco} onClick={()=>setSeletorRiscoAberto(false)}>Cancelar</button></div>
  </div></div>}
- <h2>Informações técnicas</h2><label>Metodologia<textarea rows={3} value={metodologia} onChange={e=>setMetodologia(e.target.value)}/></label>
+ </details>
+ <h2>Informações técnicas da avaliação</h2><p style={{fontSize:13,color:'#53657a'}}>Metodologia e conclusão referentes à avaliação ambiental como um todo, não a um risco individual.</p><label>Metodologia<textarea rows={3} value={metodologia} onChange={e=>setMetodologia(e.target.value)}/></label>
  <label>Conclusão técnica<textarea rows={3} value={conclusao} onChange={e=>setConclusao(e.target.value)}/></label>
  <p style={{fontSize:13,color:'#53657a'}}>Os critérios de referência são informativos, definidos por tipo de medição nesta avaliação, e não classificam riscos automaticamente. O vínculo organizacional de uma avaliação existente não pode ser alterado nesta versão. Microfone e associação aos riscos serão integrados nas próximas etapas.</p>
  </fieldset></>}
