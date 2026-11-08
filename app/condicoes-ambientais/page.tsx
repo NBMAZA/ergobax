@@ -31,6 +31,7 @@ export default function CondicoesAmbientais(){
  const [nivelSelecionado,setNivelSelecionado]=useState<Nivel>('posto');
  const estruturaSelecionada=nivelSelecionado==='cliente'?cliente:nivelSelecionado==='planta'?planta:nivelSelecionado==='instalacao'?instalacao:nivelSelecionado==='posto'?posto:estacao;
  const [seletorRiscoAberto,setSeletorRiscoAberto]=useState(false),[riscoTitulo,setRiscoTitulo]=useState(''),[riscoGrupo,setRiscoGrupo]=useState(''),[riscoObservacoes,setRiscoObservacoes]=useState(''),[riscoNivel,setRiscoNivel]=useState<Nivel>('cliente'),[riscoEstrutura,setRiscoEstrutura]=useState(''),[criandoRisco,setCriandoRisco]=useState(false);
+ const [riscoGeral,setRiscoGeral]=useState<CamposRiscoCompleto>({...riscoCompletoVazio});
  const [erroRisco,setErroRisco]=useState('');
  const [estruturasRisco,setEstruturasRisco]=useState<Record<'planta'|'instalacao'|'posto'|'estacao',Item[]>>({planta:[],instalacao:[],posto:[],estacao:[]});
  const [situacao,setSituacao]=useState<'rascunho'|'concluida'|'reaberta'>('rascunho'),[riscos,setRiscos]=useState<{id:string;titulo:string}[]>([]),[riscosSelecionados,setRiscosSelecionados]=useState<string[]>([]);
@@ -123,7 +124,7 @@ export default function CondicoesAmbientais(){
  async function incluirRisco(){if(bloqueada){setErroRisco('Avaliação concluída: edição bloqueada.');return}
   setErroRisco('');
   if(!editandoId){setErroRisco('Salve a avaliação ambiental antes de incluir um risco.');return}
-  if(!riscoTitulo.trim()){setErroRisco('Informe o título do risco.');return}
+  if(!riscoGeral.titulo.trim()){setErroRisco('Informe o título do risco.');return}
   const nivelVinculo=nivel;
   const estruturaVinculo=editandoId?estruturaOriginal:(nivel==='cliente'?null:nivel==='planta'?planta:nivel==='instalacao'?instalacao:nivel==='posto'?posto:estacao);
   if(nivelVinculo!=='cliente'&&!estruturaVinculo){setErroRisco('A avaliação não possui um ambiente definido. Salve uma avaliação com ambiente válido antes de incluir o risco.');return}
@@ -134,11 +135,11 @@ export default function CondicoesAmbientais(){
    const {data:{user},error:authError}=await db.auth.getUser();
    if(authError)throw authError;
    if(!user)throw new Error('Sessão expirada.');
-   const {data:novo,error:ie}=await db.from('riscos_identificados').insert({cliente_id:cliente,nivel:nivelVinculo,estrutura_id:estruturaVinculo,origem:'outra',titulo:riscoTitulo.trim(),grupo_risco:riscoGrupo.trim()||null,observacoes:riscoObservacoes.trim()||null,criado_por:user.id}).select('id,titulo').single();
+   const {data:novo,error:ie}=await db.from('riscos_identificados').insert({cliente_id:cliente,nivel:nivelVinculo,estrutura_id:estruturaVinculo,origem:'outra',...riscoGeral,titulo:riscoGeral.titulo.trim(),grupo_risco:riscoGeral.grupo_risco.trim()||null,prazo:riscoGeral.prazo.trim()||null,probabilidade:riscoGeral.probabilidade===''?null:Number(riscoGeral.probabilidade),severidade:riscoGeral.severidade===''?null:Number(riscoGeral.severidade),risco_puro:riscoGeral.risco_puro===''?null:Number(riscoGeral.risco_puro),criado_por:user.id}).select('id,titulo').single();
    if(ie)throw ie;novoId=novo.id;
    const {error:ve}=await db.from('avaliacoes_ambientais_riscos').insert({avaliacao_id:editandoId,risco_id:novo.id});
    if(ve)throw ve;
-   setRiscos(a=>[...a,novo]);setRiscosSelecionados(a=>[...a,novo.id]);setSeletorRiscoAberto(false);setRiscoTitulo('');setRiscoGrupo('');setRiscoObservacoes('');
+   setRiscos(a=>[...a,novo]);setRiscosSelecionados(a=>[...a,novo.id]);setSeletorRiscoAberto(false);setRiscoGeral({...riscoCompletoVazio});setRiscoTitulo('');setRiscoGrupo('');setRiscoObservacoes('');
    setMensagem('Risco cadastrado e vinculado à avaliação.');
   }catch(e){
    if(novoId)await db.from('riscos_identificados').delete().eq('id',novoId).eq('cliente_id',cliente);
@@ -319,14 +320,12 @@ export default function CondicoesAmbientais(){
  <div role="dialog" aria-modal="true" aria-label="Incluir novo risco" onClick={e=>e.stopPropagation()} style={{background:'#fff',color:'#0f172a',borderRadius:12,padding:20,width:'100%',maxWidth:640,maxHeight:'80vh',overflowY:'auto'}}>
  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}><h3>Incluir novo risco</h3><button type="button" disabled={criandoRisco} onClick={()=>setSeletorRiscoAberto(false)}>Fechar</button></div>
  {erroRisco&&<p role="alert" style={{background:'#fef2f2',color:'#991b1b',border:'1px solid #fecaca',borderRadius:8,padding:12}}>{erroRisco}</p>}
- <label>Título do risco<input autoFocus value={riscoTitulo} onChange={e=>setRiscoTitulo(e.target.value)} placeholder="Identificação do risco"/></label>
- <label>Grupo de risco<input value={riscoGrupo} onChange={e=>setRiscoGrupo(e.target.value)} placeholder="Grupo ou categoria"/></label>
+ <FormularioRiscoCompleto valor={riscoGeral} alterar={setRiscoGeral} desabilitado={criandoRisco}/>
  <div style={{padding:12,border:'1px solid #cbd5e1',borderRadius:8,background:'#f8fafc',marginTop:12,marginBottom:12}}>
  <strong>Ambiente da avaliação (vínculo automático)</strong>
  <p style={{margin:'6px 0 0'}}>{({cliente:'Empresa',planta:'Planta',instalacao:'Instalação',posto:'Posto',estacao:'Estação'} as Record<Nivel,string>)[nivel]} — {nivel==='cliente'?'Empresa Ativa':(estruturasRisco[nivel].find(x=>x.id===estruturaOriginal)?.nome||estruturaOriginal||'Ambiente vinculado à avaliação')}</p>
  <small>O risco será associado somente a este ambiente.</small>
  </div>
- <label>Observações<textarea rows={3} value={riscoObservacoes} onChange={e=>setRiscoObservacoes(e.target.value)}/></label>
  <div style={{display:'flex',gap:10,marginTop:14}}><button type="button" disabled={criandoRisco} onClick={incluirRisco}>{criandoRisco?'Salvando...':'Salvar e vincular risco'}</button><button type="button" disabled={criandoRisco} onClick={()=>setSeletorRiscoAberto(false)}>Cancelar</button></div>
  </div></div>}
  <h2>Informações técnicas</h2><label>Metodologia<textarea rows={3} value={metodologia} onChange={e=>setMetodologia(e.target.value)}/></label>
