@@ -238,8 +238,7 @@ export default function CondicoesAmbientais(){
  const mudarPonto=(id:string,campo:'nome'|'localizacao'|'observacoes',valor:string)=>setPontos(ps=>ps.map(p=>p.id===id?{...p,[campo]:valor}:p));
  const mudarMedicao=(pid:string,mid:string,campo:keyof Omit<Medicao,'id'>,valor:string)=>setPontos(ps=>ps.map(p=>p.id===pid?{...p,medicoes:p.medicoes.map(m=>m.id===mid?{...m,[campo]:valor}:m)}:p));
  return <div className="ergobax-gestao-page" onChangeCapture={e=>{const tag=(e.target as HTMLElement).tagName;if(tela==='formulario'&&!bloqueada&&(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'))setFormularioAlterado(true)}}><header><nav><span className="ergobax-modulo-marca"><img src="/ergobax_logo_transparente.png" alt="ERGOBAX — Plataforma de Inteligência Ergonômica"/><strong>Condições Ambientais</strong></span></nav></header><main><section style={{maxWidth:1100}}>
- <p><Link href="/">← Voltar ao painel</Link></p><h1>Condições Ambientais</h1>
- <p style={{color:'#53657a'}}>Avaliações ambientais da Empresa Ativa. Consulte os registros ou inicie uma nova coleta.</p>
+ <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:10}}><div><h1 style={{margin:'0 0 4px'}}>Condições Ambientais</h1><span style={{fontSize:13,color:'#53657a'}}>{tela==='formulario'?'Avaliação ambiental — '+(editandoId?'edição':'novo cadastro'):'Lista de avaliações ambientais'}</span></div><Link href="/">← Voltar ao painel</Link></div>
  <div style={{background:"#eef7f4",border:"1px solid #b9d8cb",borderLeft:"4px solid #239b65",padding:"14px 18px",borderRadius:8,margin:"16px 0 22px",overflowWrap:"anywhere"}}><div style={{fontSize:13,color:"#315e54",fontWeight:700,marginBottom:5}}>EMPRESA EM ANÁLISE</div><div style={{fontSize:"clamp(16px,2vw,20px)",fontWeight:700,color:"#102c4a",lineHeight:1.45}}>{clientes.find(c=>c.id===cliente)?.razao_social||"Nenhuma empresa selecionada"}</div></div>
  {erro&&<p role="alert" style={{color:'#b42318'}}>{erro}</p>}
  {mensagem&&<p role="status" style={{color:'#166534'}}>{mensagem}</p>}
@@ -267,7 +266,7 @@ export default function CondicoesAmbientais(){
  {bloqueada&&<p style={{background:'#eef3f8',padding:12,borderRadius:8,fontWeight:700}}>Avaliação {nomeEstado(estadoVigencia)} — somente consulta. Para alterar informações, crie uma nova avaliação.</p>}
  <fieldset disabled={bloqueada} style={{border:0,padding:0,minWidth:0}}>
 
- <h2>Identificação da avaliação</h2>
+ <details open style={{border:"1px solid #d5e0e8",borderRadius:9,padding:"10px 12px",marginBottom:16}}><summary style={{fontWeight:700,cursor:"pointer",fontSize:17}}>Identificação da avaliação — {titulo||"Nova avaliação"} <small style={{fontWeight:400,color:"#53657a"}}>(expandir/recolher)</small></summary>
  <div className="ambiental-grid">
  <label>Título da avaliação<input value={titulo} onChange={e=>setTitulo(e.target.value)} placeholder="Ex.: Avaliação ambiental do escritório"/></label>
  <label>Data da coleta<input type="date" value={data} onChange={e=>setData(e.target.value)}/></label>
@@ -280,6 +279,7 @@ export default function CondicoesAmbientais(){
  {!editandoId&&nivel==='estacao'&&selecao('Estação',estacao,setEstacao,estacoes,true)}
  </div>
  {empresaAtiva&&<p style={{fontSize:12,color:'#53657a',margin:'8px 0'}}>Empresa herdada do Painel da Consultoria. Para alterar, volte ao painel e selecione outra empresa.</p>}
+ </details>
  <h2>Critérios de referência</h2>
  <p style={{color:'#53657a',fontSize:13}}>Informe uma vez o critério aplicável a cada tipo de medição. Os critérios serão utilizados como referência nos pontos de coleta desta avaliação.</p>
  <div className="ambiental-grid">{(Object.entries(tipos) as [Medicao['tipo'],string][]).map(([tipo,nome])=><label key={tipo}>{nome}<input value={criterios[tipo]} onChange={e=>setCriterios(atual=>({...atual,[tipo]:e.target.value}))} placeholder="Ex.: norma, limite ou critério aplicável"/></label>)}</div>
