@@ -69,7 +69,7 @@ export async function POST(req:NextRequest){
  let logo:Uint8Array|null=null;
  if(consultoria?.logo_path){const download=await db.storage.from('logos-empresas').download(consultoria.logo_path);if(!download.error&&download.data){const bytes=new Uint8Array(await download.data.arrayBuffer());const mime=download.data.type;if(bytes.length<2000000&&(mime==='image/png'||mime==='image/jpeg'))logo=bytes;}}
  const nomeConsultoria=consultoria?.nome_fantasia||consultoria?.razao_social||'Consultoria responsável';
- const imagem=()=>logo?new ImageRun({data:logo,transformation:{width:155,height:65},type:logo[0]===0x89?'png':'jpg'}):null;
+ const imagem=()=>logo?new ImageRun({data:logo,transformation:{width:105,height:44},type:logo[0]===0x89?'png':'jpg'}):null;
  const cabecalho:Paragraph[]=[];
  const logoCabecalho=imagem();
  if(logoCabecalho)cabecalho.push(new Paragraph({children:[logoCabecalho],alignment:AlignmentType.LEFT,spacing:{after:60}}));
