@@ -50,12 +50,12 @@ export async function POST(req:NextRequest){
  sections.push(heading(7,chapters[6]));
  sections.push(p('GHEE/unidade operacional depende de cadastro ou validação técnica; não é inferido automaticamente a partir do setor.'));
  const linhas=[['Unidade operacional / GHEE','Setor','Função / Cargo']];
- for(const setor of setores){const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)linhas.push(['A definir',setor.nome,'Nenhum cargo vinculado']);for(const c of cs)linhas.push(['A definir',setor.nome,c.nome+(c.codigo?' ('+c.codigo+'):'')]);}
- const semSetor=cargos.filter(c=>!vinculos.some(v=>v.cargo_id===c.id));for(const c of semSetor)linhas.push(['A definir','Sem setor vinculado',c.nome+(c.codigo?' ('+c.codigo+'):'')]);
+ for(const setor of setores){const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)linhas.push(['A definir',setor.nome,'Nenhum cargo vinculado']);for(const c of cs)linhas.push(['A definir',setor.nome,c.nome+(c.codigo?' ('+c.codigo+')':'')]);}
+ const semSetor=cargos.filter(c=>!vinculos.some(v=>v.cargo_id===c.id));for(const c of semSetor)linhas.push(['A definir','Sem setor vinculado',c.nome+(c.codigo?' ('+c.codigo+')':'')]);
  if(linhas.length===1)linhas.push(['A definir','Não cadastrado','Não cadastrado']);
  sections.push(tabela(linhas));
  sections.push(heading(8,chapters[7]));
- for(const setor of setores){sections.push(new Paragraph({text:'Setor: '+setor.nome,heading:HeadingLevel.HEADING_2}));const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)sections.push(p('Nenhum cargo vinculado.'));for(const c of cs)sections.push(p('Cargo: '+c.nome+(c.codigo?' ('+c.codigo+'):'')+' — Atividades cadastradas: '+(c.descricao_atribuicoes||'Não descritas. Revisar atividade prescrita e real, jornadas e pausas.')));}
+ for(const setor of setores){sections.push(new Paragraph({text:'Setor: '+setor.nome,heading:HeadingLevel.HEADING_2}));const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)sections.push(p('Nenhum cargo vinculado.'));for(const c of cs)sections.push(p('Cargo: '+c.nome+(c.codigo?' ('+c.codigo+')':'')+' — Atividades cadastradas: '+(c.descricao_atribuicoes||'Não descritas. Revisar atividade prescrita e real, jornadas e pausas.')));}
  for(const c of semSetor)sections.push(p('Cargo sem setor vinculado: '+c.nome+' — Conferir atividades e situação de avaliação.'));
  add(9,['Avaliações vigentes recuperadas: '+vigentes.map((set,i)=>['BIO','MOB','AMB','Iluminamento'][i]+': '+set.size).join('; ')+'.','A cobertura técnica por cargo, posto e estação ainda exige conferência individual. Cargo sem risco associado não significa ausência de risco.']);
  sections.push(heading(10,chapters[9]));
