@@ -49,6 +49,7 @@ export default function Laudos(){
  <section style={{padding:20,border:'1px solid #cbd5e1',borderRadius:12,marginTop:18}}>
  <h2>Prévia da composição do laudo</h2>
  <label>Tipo de documento <select value={tipo} onChange={e=>setTipo(e.target.value as 'AEP'|'AET')} style={{marginLeft:12,padding:8}}><option value="AEP">AEP — Avaliação Ergonômica Preliminar</option><option value="AET">AET — Análise Ergonômica do Trabalho</option></select></label>
+ <div style={{marginTop:16,marginBottom:8}}><button type="button" onClick={gerar} disabled={gerando||tipo!=='AEP'} style={{padding:'11px 18px',borderRadius:8,background:'#176f5b',color:'white',fontWeight:700,border:0,cursor:'pointer'}}>{gerando?'Gerando Word...':tipo==='AEP'?'Gerar sugestão AEP em Word':'AET — geração em desenvolvimento'}</button>{erroGeracao&&<p role="alert" style={{color:'#b42318'}}>{erroGeracao}</p>}</div>
  {carregando?<p>Consultando dados da empresa...</p>:erro?<p role="alert" style={{color:'#b42318'}}>{erro}</p>:<>
  <h3 style={{marginTop:20}}>{nome}</h3><p><strong>{setores.length}</strong> setores · <strong>{cargos.length}</strong> cargos cadastrados · <strong>{riscosVigentes}</strong> riscos associados a avaliações vigentes · {totalRiscos} riscos cadastrados</p>
  <section style={{padding:14,background:'#eef7f4',border:'1px solid #b9d8cb',borderLeft:'4px solid #239b65',borderRadius:8,marginTop:14}}><strong>EMPRESA EM ANÁLISE</strong><div style={{fontSize:18,fontWeight:700}}>{nome}</div></section>
@@ -57,8 +58,8 @@ export default function Laudos(){
  <h3>Cargos por setor</h3>
  {setores.map(s=><section key={s.id} style={{marginTop:16,padding:14,background:'#f1f5f9',borderRadius:8}}><h4 style={{margin:0}}>Setor: {s.nome}</h4><ul>{cargos.filter(c=>vinculos.some(v=>v.cargo_id===c.id&&v.setor_id===s.id)).map(c=><li key={c.id}>{c.nome}{c.codigo?' — '+c.codigo:''}</li>)}</ul></section>)}
  {semSetor.length>0&&<section style={{marginTop:16,padding:14,background:'#fff7ed',borderRadius:8}}><h4>Cargos sem setor vinculado</h4><ul>{semSetor.map(c=><li key={c.id}>{c.nome}</li>)}</ul></section>}
- <p style={{marginTop:20}}><strong>Estrutura prevista:</strong> Identificação; Objetivo; Metodologia; Caracterização; Cargos e atividades; Avaliações; Riscos; Ausência de riscos; Recomendações; Plano de ação; Conclusão; Anexos.</p>
- <button type="button" onClick={gerar} disabled={gerando||tipo!=='AEP'} style={{padding:'11px 18px',borderRadius:8,background:'#176f5b',color:'white',fontWeight:700,border:0,cursor:'pointer'}}>{gerando?'Gerando Word...':tipo==='AEP'?'Gerar sugestão AEP em Word':'AET — geração em desenvolvimento'}</button>{erroGeracao&&<p role="alert" style={{color:'#b42318'}}>{erroGeracao}</p>}<p><strong>Modelo:</strong> padrão ERGOBAX, com identidade visual da consultoria. <Link href="/documentos/configuracao">Configuração de documentos</Link>.</p>
+ <p style={{marginTop:20}}><strong>Estrutura prevista:</strong> 15 capítulos, incluindo identificação, demanda, objetivos, referências, metodologia, setores e GHEE, avaliações, riscos, recomendações, plano de ação, conclusão e anexos.</p>
+ <p><strong>Modelo:</strong> padrão ERGOBAX, com identidade visual da consultoria. <Link href="/documentos/configuracao">Configuração de documentos</Link>.</p>
  <p style={{padding:12,background:'#eff6ff',borderRadius:8}}>Esta é uma prévia cadastral inicial. Esta prévia considera riscos vinculados a avaliações vigentes de BIO, MOB, AMB e Iluminamento. A cobertura de cada cargo, outras avaliações e a ausência comprovada de risco ainda exigem validação técnica. A sugestão de AEP em Word está disponível para revisão técnica; a geração de AET e o upload do laudo final ainda serão implementados. Nenhum documento técnico foi emitido.</p>
  </>}
  </section></main></>;
