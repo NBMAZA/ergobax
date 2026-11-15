@@ -1,8 +1,8 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
-import {Document,Packer,Paragraph,TextRun,HeadingLevel,AlignmentType,TableOfContents,ImageRun,Header,Footer,PageNumber,BorderStyle,ShadingType} from 'docx';
+import {Document,Packer,Paragraph,TextRun,HeadingLevel,AlignmentType,TableOfContents,ImageRun,Header,Footer,PageNumber,BorderStyle,ShadingType,Table,TableRow,TableCell,WidthType} from 'docx';
 export const runtime='nodejs';
-const chapters=['Identificação da empresa','Objetivo','Metodologia','Caracterização da empresa','Setores, cargos e atividades','Avaliações ergonômicas','Riscos ergonômicos identificados','Ausência de riscos','Recomendações','Plano de ação','Conclusão técnica','Anexos'];
+const chapters=['Identificação da empresa e da consultoria','Demanda','Objetivos','Considerações legislativas, normativas e técnicas','Metodologia e etapas da avaliação','Caracterização da empresa','Quadro de setores, GHEE e funções analisadas','Descrição das atividades e condições de trabalho','Avaliações ergonômicas','Riscos ergonômicos identificados','Ausência de riscos — quando tecnicamente comprovada','Recomendações e medidas preventivas','Plano de ação','Conclusão técnica','Referências e anexos'];
 const p=(value:string)=>new Paragraph({children:[new TextRun(value||'Não informado')],spacing:{after:140}});
 const heading=(n:number,title:string)=>new Paragraph({text:n+'. '+title,heading:HeadingLevel.HEADING_1,spacing:{before:260,after:140}});
 export async function POST(req:NextRequest){
@@ -35,24 +35,37 @@ export async function POST(req:NextRequest){
  const vigentes=av.map(result=>new Set((result.data||[]).filter(a=>String(a.estado_vigencia||'').toLowerCase()==='vigente').map(a=>a.id)));
  const riscos=(ri.data||[]).filter(r=>fields.some((field,i)=>r[field]&&vigentes[i].has(r[field] as string)));
  const consultoria=co.data;
- const sections:(Paragraph|TableOfContents)[]=[];
+ const sections:(Paragraph|TableOfContents|Table)[]=[];
  const add=(n:number,paragraphs:string[])=>{sections.push(heading(n,chapters[n-1]));paragraphs.forEach(t=>sections.push(p(t)));};
  add(1,[empresa.razao_social,'CNPJ: '+(empresa.cnpj||'Não informado'),'Endereço: '+[empresa.logradouro,empresa.numero,empresa.bairro,empresa.cidade,empresa.uf].filter(Boolean).join(', '),'Consultoria responsável: '+(consultoria?.nome_fantasia||consultoria?.razao_social||'Não informada')]);
- add(2,['Sugestão preliminar de AEP gerada a partir dos cadastros do ERGOBAX. Escopo e objetivo técnico devem ser revisados pelo responsável.']);
- add(3,['Dados obtidos de registros cadastrados no ERGOBAX. Apenas avaliações marcadas como vigentes foram consideradas nos módulos BIO, MOB, AMB e Iluminamento. A metodologia técnica precisa de validação.']);
- add(4,['Setores cadastrados: '+setores.length+'. Cargos cadastrados: '+cargos.length+'.']);
+ add(2,['Esta AEP foi solicitada para atendimento à NR-17, que estabelece diretrizes e requisitos para adaptar as condições de trabalho às características psicofisiológicas dos trabalhadores, visando conforto, segurança, saúde e desempenho eficiente.','Motivo específico da demanda: [PREENCHER E VALIDAR PELA CONSULTORA].']);
+ add(3,['A Avaliação Ergonômica Preliminar busca identificar e avaliar situações de trabalho e fatores de risco ergonômico, oferecendo subsídios para medidas preventivas e corretivas.','A avaliação contempla, conforme aplicável, postos, funções, tarefas e atividades, incluindo aspectos mobiliários, posturais, organizacionais, ambientais e cognitivos.','Os resultados podem subsidiar a gestão de riscos ocupacionais (GRO/PGR) e contribuir para o planejamento de ações relacionadas ao PCMSO. O escopo deve ser confirmado pela consultora.']);
+ add(4,['Referências a verificar quanto à edição vigente e à aplicabilidade efetiva: Lei nº 6.514/1977; Portaria nº 3.214/1978; NR-1; NR-17.','Referências técnicas candidatas, somente quando efetivamente empregadas: ABNT NBR 13966 (mesas de escritório), ABNT NBR 13962 (cadeiras de escritório), NHO-11 (iluminamento), ABNT NBR ISO 11226 (posturas estáticas), ISO 11228-1 (levantamento e transporte), ISO 11228-2 (empurrar e puxar), ISO 11228-3 (tarefas repetitivas) e método NIOSH.','[VALIDAÇÃO OBRIGATÓRIA] Selecionar apenas normas, edições e métodos realmente utilizados; conferir referências e vigência antes da emissão final.']);
  sections.push(heading(5,chapters[4]));
- for(const setor of setores){sections.push(new Paragraph({text:'Setor: '+setor.nome,heading:HeadingLevel.HEADING_2}));const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)sections.push(p('Nenhum cargo vinculado.'));for(const c of cs)sections.push(p('Cargo: '+c.nome+(c.codigo?' ('+c.codigo+')':'')+' — Atividades: '+(c.descricao_atribuicoes||'Pendente de descrição.')));}
- const semSetor=cargos.filter(c=>!vinculos.some(v=>v.cargo_id===c.id));if(semSetor.length){sections.push(new Paragraph({text:'Cargos sem setor vinculado',heading:HeadingLevel.HEADING_2}));semSetor.forEach(c=>sections.push(p(c.nome+' — Avaliação pendente de conferência.')));}
- add(6,['Avaliações vigentes: '+vigentes.map((set,i)=>['BIO','MOB','AMB','Iluminamento'][i]+': '+set.size).join('; ')+'.','A cobertura das avaliações por cargo, posto e estação deverá ser confirmada pela consultora.']);
+ sections.push(p('As etapas abaixo representam o roteiro metodológico proposto; a execução efetiva de cada atividade deve ser confirmada.'));
+ const tabela=(rows:string[][])=>new Table({width:{size:100,type:WidthType.PERCENTAGE},rows:rows.map((cells,i)=>new TableRow({children:cells.map(value=>new TableCell({children:[new Paragraph({children:[new TextRun({text:value,bold:i===0})]})]}))}))});
+ sections.push(tabela([['Fase','Atividades previstas'],['1 — Coleta','Visitas e inspeções, entrevistas, registros de atividades, jornadas, pausas e queixas, conforme efetivamente realizados.'],['2 — Avaliação','Identificação e análise de fatores biomecânicos, ambientais, organizacionais, cognitivos e outros pertinentes.'],['3 — Documento','Diagnósticos, riscos, recomendações, plano de ação, conclusões e referências.']]));
+ sections.push(p('Data(s) de visita: [INFORMAR]. Acompanhante(s) e função(ões): [INFORMAR]. Entrevistas, fotos e vídeos: [CONFIRMAR EXECUÇÃO].'));
+ add(6,['Setores cadastrados: '+setores.length+'. Cargos cadastrados: '+cargos.length+'.','Caracterização das instalações, processos e organização: [COMPLEMENTAR COM DADOS VERIFICADOS].']);
  sections.push(heading(7,chapters[6]));
+ sections.push(p('GHEE/unidade operacional depende de cadastro ou validação técnica; não é inferido automaticamente a partir do setor.'));
+ const linhas=[['Unidade operacional / GHEE','Setor','Função / Cargo']];
+ for(const setor of setores){const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)linhas.push(['A definir',setor.nome,'Nenhum cargo vinculado']);for(const c of cs)linhas.push(['A definir',setor.nome,c.nome+(c.codigo?' ('+c.codigo+'):'')]);}
+ const semSetor=cargos.filter(c=>!vinculos.some(v=>v.cargo_id===c.id));for(const c of semSetor)linhas.push(['A definir','Sem setor vinculado',c.nome+(c.codigo?' ('+c.codigo+'):'')]);
+ if(linhas.length===1)linhas.push(['A definir','Não cadastrado','Não cadastrado']);
+ sections.push(tabela(linhas));
+ sections.push(heading(8,chapters[7]));
+ for(const setor of setores){sections.push(new Paragraph({text:'Setor: '+setor.nome,heading:HeadingLevel.HEADING_2}));const cs=cargos.filter(c=>vinculos.some(v=>v.setor_id===setor.id&&v.cargo_id===c.id));if(!cs.length)sections.push(p('Nenhum cargo vinculado.'));for(const c of cs)sections.push(p('Cargo: '+c.nome+(c.codigo?' ('+c.codigo+'):'')+' — Atividades cadastradas: '+(c.descricao_atribuicoes||'Não descritas. Revisar atividade prescrita e real, jornadas e pausas.')));}
+ for(const c of semSetor)sections.push(p('Cargo sem setor vinculado: '+c.nome+' — Conferir atividades e situação de avaliação.'));
+ add(9,['Avaliações vigentes recuperadas: '+vigentes.map((set,i)=>['BIO','MOB','AMB','Iluminamento'][i]+': '+set.size).join('; ')+'.','A cobertura técnica por cargo, posto e estação ainda exige conferência individual. Cargo sem risco associado não significa ausência de risco.']);
+ sections.push(heading(10,chapters[9]));
  if(!riscos.length)sections.push(p('Nenhum risco vinculado a avaliação vigente foi recuperado. Isso não comprova ausência de risco.'));
  for(const r of riscos)sections.push(p('Risco: '+(r.titulo||'Sem título')+' | Classificação: '+(r.classificacao_final||'Pendente')+' | Descrição: '+(r.descricao||'Pendente')));
- add(8,['Não declarar ausência de riscos sem avaliação técnica suficiente. Preenchimento pendente de validação pela consultora.']);
- sections.push(heading(9,chapters[8]));if(!riscos.length)sections.push(p('Recomendações pendentes de avaliação técnica.'));for(const r of riscos)if(r.medidas_recomendadas)sections.push(p((r.titulo||'Risco')+': '+r.medidas_recomendadas));
- sections.push(heading(10,chapters[9]));if(!riscos.length)sections.push(p('Plano de ação pendente.'));for(const r of riscos)if(r.plano_acao)sections.push(p((r.titulo||'Risco')+': '+r.plano_acao));
- add(11,['Conclusão técnica pendente de elaboração, conferência e aprovação pela consultora. Este arquivo não é um laudo final.']);
- add(12,['Fotografias, medições e documentos de apoio deverão ser anexados após conferência técnica.']);
+ add(11,['Não declarar ausência de riscos sem evidência de avaliação técnica suficiente. Descrição pendente de validação pela consultora.']);
+ sections.push(heading(12,chapters[11]));if(!riscos.length)sections.push(p('Recomendações pendentes de avaliação técnica.'));for(const r of riscos)if(r.medidas_recomendadas)sections.push(p((r.titulo||'Risco')+': '+r.medidas_recomendadas));
+ sections.push(heading(13,chapters[12]));if(!riscos.length)sections.push(p('Plano de ação pendente.'));for(const r of riscos)if(r.plano_acao)sections.push(p((r.titulo||'Risco')+': '+r.plano_acao));
+ add(14,['Conclusão técnica pendente de elaboração, conferência e aprovação pela consultora. Este arquivo não é um laudo final.']);
+ add(15,['Referências efetivamente utilizadas: [CONFERIR E PREENCHER].','Fotografias, medições, entrevistas e demais documentos de apoio: [ANEXAR APÓS CONFERÊNCIA].']);
  let logo:Uint8Array|null=null;
  if(consultoria?.logo_path){const download=await db.storage.from('logos-empresas').download(consultoria.logo_path);if(!download.error&&download.data){const bytes=new Uint8Array(await download.data.arrayBuffer());const mime=download.data.type;if(bytes.length<2000000&&(mime==='image/png'||mime==='image/jpeg'))logo=bytes;}}
  const nomeConsultoria=consultoria?.nome_fantasia||consultoria?.razao_social||'Consultoria responsável';
