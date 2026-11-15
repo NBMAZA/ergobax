@@ -60,19 +60,19 @@ export async function POST(req:NextRequest){
  const cabecalho:Paragraph[]=[];
  const logoCabecalho=imagem();
  if(logoCabecalho)cabecalho.push(new Paragraph({children:[logoCabecalho],alignment:AlignmentType.LEFT,spacing:{after:60}}));
- cabecalho.push(new Paragraph({children:[new TextRun({text:nomeConsultoria,bold:true,color:'173B65',size:18}),new TextRun({text:'   |   AEP — Avaliação Ergonômica Preliminar',color:'64748B',size:16})],border:{bottom:{color:'B9D8CB',style:BorderStyle.SINGLE,size:8}},spacing:{after:100}}));
+ cabecalho.push(new Paragraph({children:[new TextRun({text:nomeConsultoria,font:'Verdana',bold:true,color:'173B65',size:16}),new TextRun({text:'   |   AEP — Avaliação Ergonômica Preliminar',font:'Verdana',color:'64748B',size:16})],border:{bottom:{color:'B9D8CB',style:BorderStyle.SINGLE,size:8}},spacing:{after:100}}));
  const cover:Paragraph[]=[
- new Paragraph({text:'RELATÓRIO TÉCNICO ERGONÔMICO',alignment:AlignmentType.CENTER,spacing:{before:1100,after:240},run:{color:'176F5B',bold:true,size:22}}),
- new Paragraph({text:'AEP',alignment:AlignmentType.CENTER,spacing:{before:350,after:100},run:{color:'173B65',bold:true,size:64}}),
- new Paragraph({text:'AVALIAÇÃO ERGONÔMICA PRELIMINAR',alignment:AlignmentType.CENTER,spacing:{after:750},run:{color:'173B65',bold:true,size:28}}),
- new Paragraph({text:'EMPRESA AVALIADA',alignment:AlignmentType.CENTER,spacing:{after:160},run:{color:'64748B',bold:true,size:18}}),
- new Paragraph({text:empresa.razao_social,alignment:AlignmentType.CENTER,spacing:{after:650},run:{color:'173B65',bold:true,size:30}}),
- new Paragraph({text:'Consultoria responsável',alignment:AlignmentType.CENTER,spacing:{after:90},run:{color:'64748B',size:18}}),
- new Paragraph({text:nomeConsultoria,alignment:AlignmentType.CENTER,spacing:{after:400},run:{bold:true,size:22}}),
+ new Paragraph({text:'RELATÓRIO TÉCNICO ERGONÔMICO',alignment:AlignmentType.CENTER,spacing:{before:1100,after:240},run:{font:'Verdana',color:'176F5B',bold:true,size:22}}),
+ new Paragraph({text:'AEP',alignment:AlignmentType.CENTER,spacing:{before:350,after:100},run:{font:'Verdana',color:'173B65',bold:true,size:64}}),
+ new Paragraph({text:'AVALIAÇÃO ERGONÔMICA PRELIMINAR',alignment:AlignmentType.CENTER,spacing:{after:750},run:{font:'Verdana',color:'173B65',bold:true,size:28}}),
+ new Paragraph({text:'EMPRESA AVALIADA',alignment:AlignmentType.CENTER,spacing:{after:160},run:{font:'Verdana',color:'64748B',bold:true,size:18}}),
+ new Paragraph({text:empresa.razao_social,alignment:AlignmentType.CENTER,spacing:{after:650},run:{font:'Verdana',color:'173B65',bold:true,size:30}}),
+ new Paragraph({text:'Consultoria responsável',alignment:AlignmentType.CENTER,spacing:{after:90},run:{font:'Verdana',color:'64748B',size:18}}),
+ new Paragraph({text:nomeConsultoria,alignment:AlignmentType.CENTER,spacing:{after:400},run:{font:'Verdana',bold:true,size:22}}),
  new Paragraph({text:'Emissão da sugestão: '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'long',timeZone:'America/Sao_Paulo'}).format(new Date()),alignment:AlignmentType.CENTER,spacing:{after:550}}),
- new Paragraph({children:[new TextRun({text:'SUGESTÃO PRELIMINAR — NÃO CONSTITUI LAUDO FINAL APROVADO',bold:true,color:'9A3412',size:18})],alignment:AlignmentType.CENTER,shading:{type:ShadingType.CLEAR,fill:'FFF7ED'},spacing:{before:160,after:240}})
+ new Paragraph({children:[new TextRun({font:'Verdana',text:'SUGESTÃO PRELIMINAR — NÃO CONSTITUI LAUDO FINAL APROVADO',bold:true,color:'9A3412',size:18})],alignment:AlignmentType.CENTER,shading:{type:ShadingType.CLEAR,fill:'FFF7ED'},spacing:{before:160,after:240}})
  ];
- const doc=new Document({features:{updateFields:true},sections:[{properties:{titlePage:false,page:{margin:{top:1700,bottom:1100,left:1100,right:1100}}},headers:{default:new Header({children:cabecalho})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun('ERGOBAX · Sugestão preliminar · Página '),new TextRun({children:[PageNumber.CURRENT]})],alignment:AlignmentType.RIGHT})]})},children:[...cover,new Paragraph({pageBreakBefore:true,text:'ÍNDICE',heading:HeadingLevel.TITLE}),new TableOfContents('Sumário',{hyperlink:true,headingStyleRange:'1-2'}),new Paragraph({text:'No Word, atualize o índice para recalcular as páginas.',spacing:{after:240}}),new Paragraph({pageBreakBefore:true,text:'CONTEÚDO TÉCNICO',heading:HeadingLevel.TITLE}),...sections]}]});
+ const doc=new Document({features:{updateFields:true},styles:{default:{document:{run:{font:'Verdana',size:16}},heading1:{run:{font:'Verdana',size:16,bold:true,color:'173B65'}},heading2:{run:{font:'Verdana',size:16,bold:true,color:'176F5B'}},title:{run:{font:'Verdana',size:16,bold:true,color:'173B65'}}}},sections:[{properties:{titlePage:false,page:{margin:{top:1700,bottom:1100,left:1100,right:1100}}},headers:{default:new Header({children:cabecalho})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun({text:'ERGOBAX · Sugestão preliminar · Página ',font:'Verdana',size:16}),new TextRun({children:[PageNumber.CURRENT]})],alignment:AlignmentType.RIGHT})]})},children:[...cover,new Paragraph({pageBreakBefore:true,text:'ÍNDICE',heading:HeadingLevel.TITLE}),new TableOfContents('Sumário',{hyperlink:true,headingStyleRange:'1-2'}),new Paragraph({text:'No Word, atualize o índice para recalcular as páginas.',spacing:{after:240}}),new Paragraph({pageBreakBefore:true,text:'CONTEÚDO TÉCNICO',heading:HeadingLevel.TITLE}),...sections]}]});
  const buffer=await Packer.toBuffer(doc);
  return new NextResponse(new Uint8Array(buffer),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':'attachment; filename="ERGOBAX_AEP_sugestao.docx"','Cache-Control':'no-store'}});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Erro ao gerar sugestão.'},{status:500});}
