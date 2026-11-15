@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@supabase/supabase-js';
-import {Document,Packer,Paragraph,TextRun,HeadingLevel,AlignmentType,TableOfContents,ImageRun,Header,Footer,PageNumber} from 'docx';
+import {Document,Packer,Paragraph,TextRun,HeadingLevel,AlignmentType,TableOfContents,ImageRun,Header,Footer,PageNumber,BorderStyle,ShadingType} from 'docx';
 export const runtime='nodejs';
 const chapters=['Identificação da empresa','Objetivo','Metodologia','Caracterização da empresa','Setores, cargos e atividades','Avaliações ergonômicas','Riscos ergonômicos identificados','Ausência de riscos','Recomendações','Plano de ação','Conclusão técnica','Anexos'];
 const p=(value:string)=>new Paragraph({children:[new TextRun(value||'Não informado')],spacing:{after:140}});
@@ -55,11 +55,24 @@ export async function POST(req:NextRequest){
  add(12,['Fotografias, medições e documentos de apoio deverão ser anexados após conferência técnica.']);
  let logo:Uint8Array|null=null;
  if(consultoria?.logo_path){const download=await db.storage.from('logos-empresas').download(consultoria.logo_path);if(!download.error&&download.data){const bytes=new Uint8Array(await download.data.arrayBuffer());const mime=download.data.type;if(bytes.length<2000000&&(mime==='image/png'||mime==='image/jpeg'))logo=bytes;}}
- const logoRun=logo?new ImageRun({data:logo,transformation:{width:165,height:75},type:'png'}):null;
- const cover:Paragraph[]=[new Paragraph({text:'ERGOBAX — SUGESTÃO DE LAUDO',alignment:AlignmentType.CENTER,spacing:{after:700}})];
- if(logoRun)cover.push(new Paragraph({children:[logoRun],alignment:AlignmentType.CENTER,spacing:{after:450}}));
- cover.push(new Paragraph({text:consultoria?.nome_fantasia||consultoria?.razao_social||'Consultoria',alignment:AlignmentType.CENTER,spacing:{after:600}}),new Paragraph({text:'AEP — AVALIAÇÃO ERGONÔMICA PRELIMINAR',alignment:AlignmentType.CENTER,heading:HeadingLevel.TITLE,spacing:{after:500}}),new Paragraph({text:empresa.razao_social,alignment:AlignmentType.CENTER,spacing:{after:400}}),p('DOCUMENTO PRELIMINAR — SUJEITO À REVISÃO TÉCNICA'));
- const doc=new Document({features:{updateFields:true},sections:[{properties:{},headers:{default:new Header({children:[new Paragraph({text:(consultoria?.nome_fantasia||consultoria?.razao_social||'Consultoria')+' | AEP — Sugestão preliminar'})]})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun('ERGOBAX · Documento preliminar · Página '),new TextRun({children:[PageNumber.CURRENT]})]})]})},children:[...cover,new Paragraph({pageBreakBefore:true,text:'ÍNDICE',heading:HeadingLevel.HEADING_1}),new TableOfContents('Sumário',{hyperlink:true,headingStyleRange:'1-2'}),new Paragraph({text:'No Word, atualize o índice para recalcular as páginas.',spacing:{after:240}}),new Paragraph({pageBreakBefore:true,text:'CONTEÚDO TÉCNICO',heading:HeadingLevel.TITLE}),...sections]}]});
+ const nomeConsultoria=consultoria?.nome_fantasia||consultoria?.razao_social||'Consultoria responsável';
+ const imagem=()=>logo?new ImageRun({data:logo,transformation:{width:155,height:65},type:logo[0]===0x89?'png':'jpg'}):null;
+ const cabecalho:Paragraph[]=[];
+ const logoCabecalho=imagem();
+ if(logoCabecalho)cabecalho.push(new Paragraph({children:[logoCabecalho],alignment:AlignmentType.LEFT,spacing:{after:60}}));
+ cabecalho.push(new Paragraph({children:[new TextRun({text:nomeConsultoria,bold:true,color:'173B65',size:18}),new TextRun({text:'   |   AEP — Avaliação Ergonômica Preliminar',color:'64748B',size:16})],border:{bottom:{color:'B9D8CB',style:BorderStyle.SINGLE,size:8}},spacing:{after:100}}));
+ const cover:Paragraph[]=[
+ new Paragraph({text:'RELATÓRIO TÉCNICO ERGONÔMICO',alignment:AlignmentType.CENTER,spacing:{before:1100,after:240},run:{color:'176F5B',bold:true,size:22}}),
+ new Paragraph({text:'AEP',alignment:AlignmentType.CENTER,spacing:{before:350,after:100},run:{color:'173B65',bold:true,size:64}}),
+ new Paragraph({text:'AVALIAÇÃO ERGONÔMICA PRELIMINAR',alignment:AlignmentType.CENTER,spacing:{after:750},run:{color:'173B65',bold:true,size:28}}),
+ new Paragraph({text:'EMPRESA AVALIADA',alignment:AlignmentType.CENTER,spacing:{after:160},run:{color:'64748B',bold:true,size:18}}),
+ new Paragraph({text:empresa.razao_social,alignment:AlignmentType.CENTER,spacing:{after:650},run:{color:'173B65',bold:true,size:30}}),
+ new Paragraph({text:'Consultoria responsável',alignment:AlignmentType.CENTER,spacing:{after:90},run:{color:'64748B',size:18}}),
+ new Paragraph({text:nomeConsultoria,alignment:AlignmentType.CENTER,spacing:{after:400},run:{bold:true,size:22}}),
+ new Paragraph({text:'Emissão da sugestão: '+new Intl.DateTimeFormat('pt-BR',{dateStyle:'long',timeZone:'America/Sao_Paulo'}).format(new Date()),alignment:AlignmentType.CENTER,spacing:{after:550}}),
+ new Paragraph({children:[new TextRun({text:'SUGESTÃO PRELIMINAR — NÃO CONSTITUI LAUDO FINAL APROVADO',bold:true,color:'9A3412',size:18})],alignment:AlignmentType.CENTER,shading:{type:ShadingType.CLEAR,fill:'FFF7ED'},spacing:{before:160,after:240}})
+ ];
+ const doc=new Document({features:{updateFields:true},sections:[{properties:{titlePage:false,page:{margin:{top:1700,bottom:1100,left:1100,right:1100}}},headers:{default:new Header({children:cabecalho})},footers:{default:new Footer({children:[new Paragraph({children:[new TextRun('ERGOBAX · Sugestão preliminar · Página '),new TextRun({children:[PageNumber.CURRENT]})],alignment:AlignmentType.RIGHT})]})},children:[...cover,new Paragraph({pageBreakBefore:true,text:'ÍNDICE',heading:HeadingLevel.TITLE}),new TableOfContents('Sumário',{hyperlink:true,headingStyleRange:'1-2'}),new Paragraph({text:'No Word, atualize o índice para recalcular as páginas.',spacing:{after:240}}),new Paragraph({pageBreakBefore:true,text:'CONTEÚDO TÉCNICO',heading:HeadingLevel.TITLE}),...sections]}]});
  const buffer=await Packer.toBuffer(doc);
  return new NextResponse(new Uint8Array(buffer),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','Content-Disposition':'attachment; filename="ERGOBAX_AEP_sugestao.docx"','Cache-Control':'no-store'}});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:'Erro ao gerar sugestão.'},{status:500});}
