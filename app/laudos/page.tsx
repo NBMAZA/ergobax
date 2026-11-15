@@ -8,7 +8,7 @@ type Vinculo={cargo_id:string;setor_id:string};
 type Risco={id:string;avaliacao_bio_id:string|null;avaliacao_mobiliario_id:string|null;avaliacao_ambiental_id:string|null;avaliacao_iluminamento_id:string|null};
 const fontes=[['avaliacao_bio_id','BIO'],['avaliacao_mobiliario_id','MOB'],['avaliacao_ambiental_id','AMB'],['avaliacao_iluminamento_id','Iluminamento']] as const;
 export default function Laudos(){
- const [tipo,setTipo]=useState<'AEP'|'AET'>('AEP');
+ const [tipo,setTipo]=useState<'AEP'|'AET'>('AEP');const [gerando,setGerando]=useState(false);const [erroGeracao,setErroGeracao]=useState('');
  const [cliente,setCliente]=useState('');const [nome,setNome]=useState('');
  const [cargos,setCargos]=useState<Cargo[]>([]);const [setores,setSetores]=useState<Setor[]>([]);const [vinculos,setVinculos]=useState<Vinculo[]>([]);
  const [totalRiscos,setTotalRiscos]=useState(0);const [vigentes,setVigentes]=useState<Record<string,Set<string>>>({});const [riscosVigentes,setRiscosVigentes]=useState(0);const [pendencias,setPendencias]=useState<string[]>([]);const [erro,setErro]=useState('');const [carregando,setCarregando]=useState(true);
@@ -41,6 +41,7 @@ export default function Laudos(){
  }
  void carregar();const atualizar=()=>void carregar();window.addEventListener('portal-nr17:empresa-ativa',atualizar);return()=>{ativo=false;window.removeEventListener('portal-nr17:empresa-ativa',atualizar)};
  },[]);
+ async function gerar(){setGerando(true);setErroGeracao('');try{if(tipo!=='AEP')throw Error('A geração de AET ainda não está disponível.');const {data:{session}}=await supabase().auth.getSession();if(!session)throw Error('Sessão expirada.');const response=await fetch('/api/laudos/gerar',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({clienteId:cliente,tipo})});if(!response.ok){const data=await response.json();throw Error(data.error||'Falha na geração do Word.');}const blob=await response.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='ERGOBAX_AEP_sugestao.docx';a.click();URL.revokeObjectURL(url);}catch(e){setErroGeracao(e instanceof Error?e.message:'Falha ao gerar documento.')}finally{setGerando(false);}}
  const semSetor=cargos.filter(c=>!vinculos.some(v=>v.cargo_id===c.id));
  return <><header className="ergobax-modulo-header" style={{padding:'6px 16px',minHeight:56}}><nav style={{minHeight:44,display:'flex',alignItems:'center',gap:12}}><span className="ergobax-modulo-marca"><img style={{maxHeight:42,width:'auto'}} src="/ergobax_logo_transparente.png" alt="ERGOBAX"/><strong>Laudos AEP e AET</strong></span><Link href="/" style={{marginLeft:'auto',padding:'8px 12px',borderRadius:8,background:'#eef4fa',color:'#15324d',fontWeight:600,textDecoration:'none'}}>← Voltar ao painel</Link></nav></header><main style={{maxWidth:1100,margin:'16px auto',padding:'0 20px 60px'}}>
  
@@ -57,8 +58,8 @@ export default function Laudos(){
  {setores.map(s=><section key={s.id} style={{marginTop:16,padding:14,background:'#f1f5f9',borderRadius:8}}><h4 style={{margin:0}}>Setor: {s.nome}</h4><ul>{cargos.filter(c=>vinculos.some(v=>v.cargo_id===c.id&&v.setor_id===s.id)).map(c=><li key={c.id}>{c.nome}{c.codigo?' — '+c.codigo:''}</li>)}</ul></section>)}
  {semSetor.length>0&&<section style={{marginTop:16,padding:14,background:'#fff7ed',borderRadius:8}}><h4>Cargos sem setor vinculado</h4><ul>{semSetor.map(c=><li key={c.id}>{c.nome}</li>)}</ul></section>}
  <p style={{marginTop:20}}><strong>Estrutura prevista:</strong> Identificação; Objetivo; Metodologia; Caracterização; Cargos e atividades; Avaliações; Riscos; Ausência de riscos; Recomendações; Plano de ação; Conclusão; Anexos.</p>
- <p><strong>Modelo:</strong> padrão ERGOBAX, com identidade visual da consultoria. <Link href="/documentos/configuracao">Configuração de documentos</Link>.</p>
- <p style={{padding:12,background:'#eff6ff',borderRadius:8}}>Esta é uma prévia cadastral inicial. Esta prévia considera riscos vinculados a avaliações vigentes de BIO, MOB, AMB e Iluminamento. A cobertura de cada cargo, outras avaliações e a ausência comprovada de risco ainda exigem validação técnica. A geração do Word e o upload do laudo final ainda serão implementados. Nenhum documento técnico foi emitido.</p>
+ <button type="button" onClick={gerar} disabled={gerando||tipo!=='AEP'} style={{padding:'11px 18px',borderRadius:8,background:'#176f5b',color:'white',fontWeight:700,border:0,cursor:'pointer'}}>{gerando?'Gerando Word...':tipo==='AEP'?'Gerar sugestão AEP em Word':'AET — geração em desenvolvimento'}</button>{erroGeracao&&<p role="alert" style={{color:'#b42318'}}>{erroGeracao}</p>}<p><strong>Modelo:</strong> padrão ERGOBAX, com identidade visual da consultoria. <Link href="/documentos/configuracao">Configuração de documentos</Link>.</p>
+ <p style={{padding:12,background:'#eff6ff',borderRadius:8}}>Esta é uma prévia cadastral inicial. Esta prévia considera riscos vinculados a avaliações vigentes de BIO, MOB, AMB e Iluminamento. A cobertura de cada cargo, outras avaliações e a ausência comprovada de risco ainda exigem validação técnica. A sugestão de AEP em Word está disponível para revisão técnica; a geração de AET e o upload do laudo final ainda serão implementados. Nenhum documento técnico foi emitido.</p>
  </>}
  </section></main></>;
 }
