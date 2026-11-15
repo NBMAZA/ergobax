@@ -21,19 +21,22 @@ export async function POST(req:NextRequest){
  const {data:empresa,error:ee}=await db.from('clientes').select('id,consultoria_id,razao_social,cnpj,cidade,uf,logradouro,numero,bairro').eq('id',clienteId).in('consultoria_id',ids.length?ids:['00000000-0000-0000-0000-000000000000']).maybeSingle();
  if(ee)throw ee;if(!empresa)return NextResponse.json({error:'Empresa não autorizada.'},{status:403});
  const consultoriaId=empresa.consultoria_id;
- const [co,ca,se,vi,ri,...av]=await Promise.all([
+ const [co,ca,se,vi,ri,fa,...av]=await Promise.all([
  db.from('consultorias').select('razao_social,nome_fantasia,logo_path').eq('id',consultoriaId).single(),
  db.from('cargos').select('id,nome,codigo,descricao_atribuicoes,jornada_inicio,jornada_fim').eq('cliente_id',clienteId).eq('consultoria_id',consultoriaId).order('nome'),
  db.from('setores').select('id,nome').eq('cliente_id',clienteId).eq('consultoria_id',consultoriaId).order('nome'),
  db.from('cargo_setores').select('cargo_id,setor_id').eq('cliente_id',clienteId),
- db.from('riscos_identificados').select('id,titulo,descricao,classificacao_final,medidas_recomendadas,plano_acao,cargo_id,avaliacao_bio_id,avaliacao_mobiliario_id,avaliacao_ambiental_id,avaliacao_iluminamento_id').eq('cliente_id',clienteId),
+ db.from('riscos_identificados').select('id,titulo,descricao,classificacao_final,medidas_recomendadas,plano_acao,cargo_id,fator_catalogo_id,avaliacao_bio_id,avaliacao_mobiliario_id,avaliacao_ambiental_id,avaliacao_iluminamento_id').eq('cliente_id',clienteId),
+ db.from('catalogo_fatores_risco').select('id,codigo,grupo,fator').eq('ativo',true).or('consultoria_id.is.null,consultoria_id.eq.'+consultoriaId).order('codigo'),
  ...(['avaliacoes_biomecanicas_bio','avaliacoes_mobiliario','avaliacoes_ambientais','avaliacoes_iluminamento'] as const).map(table=>db.from(table).select('id,estado_vigencia').eq('cliente_id',clienteId))
  ]);
- for(const result of [co,ca,se,vi,ri,...av])if(result.error)throw result.error;
+ for(const result of [co,ca,se,vi,ri,fa,...av])if(result.error)throw result.error;
  const cargos=ca.data||[],setores=se.data||[],vinculos=vi.data||[];
  const fields=['avaliacao_bio_id','avaliacao_mobiliario_id','avaliacao_ambiental_id','avaliacao_iluminamento_id'] as const;
  const vigentes=av.map(result=>new Set((result.data||[]).filter(a=>String(a.estado_vigencia||'').toLowerCase()==='vigente').map(a=>a.id)));
  const riscos=(ri.data||[]).filter(r=>fields.some((field,i)=>r[field]&&vigentes[i].has(r[field] as string)));
+ const fatores=Array.from(new Map((fa.data||[]).map(f=>[f.codigo,f])).values());
+ const matrizPorCargo=()=>{const linhas:string[][]=[['Cargo','Código / fator ergonômico','Situação técnica']];for(const cargo of cargos){for(const fator of fatores){const identificados=riscos.filter(r=>r.cargo_id===cargo.id&&r.fator_catalogo_id===fator.id);linhas.push([cargo.nome,fator.codigo+' — '+fator.fator,identificados.length?'Risco identificado — '+identificados.map(r=>r.classificacao_final||'Classificação pendente').join('; '):'Ausência não confirmada — avaliação/conclusão pendente']);}}if(!fatores.length)linhas.push(['Todos os cargos','Catálogo não disponível','Não foi possível determinar fatores']);if(!cargos.length)linhas.push(['Nenhum cargo cadastrado','—','Cadastro pendente']);return linhas;};
  const consultoria=co.data;
  const sections:(Paragraph|TableOfContents|Table)[]=[];
  const add=(n:number,paragraphs:string[])=>{sections.push(heading(n,chapters[n-1]));paragraphs.forEach(t=>sections.push(p(t)));};
@@ -61,7 +64,7 @@ export async function POST(req:NextRequest){
  sections.push(heading(10,chapters[9]));
  if(!riscos.length)sections.push(p('Nenhum risco vinculado a avaliação vigente foi recuperado. Isso não comprova ausência de risco.'));
  for(const r of riscos)sections.push(p('Risco: '+(r.titulo||'Sem título')+' | Classificação: '+(r.classificacao_final||'Pendente')+' | Descrição: '+(r.descricao||'Pendente')));
- add(11,['Não declarar ausência de riscos sem evidência de avaliação técnica suficiente. Descrição pendente de validação pela consultora.']);
+ sections.push(heading(11,chapters[10]));sections.push(p('Todos os cargos e fatores ativos do catálogo são relacionados. Sem confirmação técnica registrada, a ausência de risco permanece pendente e não pode ser afirmada.'));sections.push(tabela(matrizPorCargo()));
  sections.push(heading(12,chapters[11]));if(!riscos.length)sections.push(p('Recomendações pendentes de avaliação técnica.'));for(const r of riscos)if(r.medidas_recomendadas)sections.push(p((r.titulo||'Risco')+': '+r.medidas_recomendadas));
  sections.push(heading(13,chapters[12]));if(!riscos.length)sections.push(p('Plano de ação pendente.'));for(const r of riscos)if(r.plano_acao)sections.push(p((r.titulo||'Risco')+': '+r.plano_acao));
  add(14,['Conclusão técnica pendente de elaboração, conferência e aprovação pela consultora. Este arquivo não é um laudo final.']);
