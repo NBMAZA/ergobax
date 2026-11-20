@@ -73,7 +73,7 @@ export default function ColetaBiomecanicaBio(){
  function abrirRiscoCompleto(){if(bloqueada){setErro('Avaliação concluída: edição bloqueada.');return}if(!editando||alterado){setErro('Salve a avaliação antes de adicionar riscos.');return}if(!estacao&&!posto){setErro('Selecione posto ou estação.');return}setErro('');setRiscoCompletoAberto(true)}
 
  const contextoRisco=useRef(0);
- function limparRiscoContexto(){contextoRisco.current++;setRiscoInline(null);setRiscosDoFator([]);setRiscoCompletoAberto(false);reconhecimentoRisco.current?.stop();reconhecimentoRisco.current=null;setGravandoRisco('');}
+ function limparRiscoContexto(){contextoRisco.current++;setErro('');setAviso('');setRiscoInline(null);setRiscosDoFator([]);setRiscoCompletoAberto(false);reconhecimentoRisco.current?.stop();reconhecimentoRisco.current=null;setGravandoRisco('');}
  async function abrirRiscoInline(id?:string){const contexto=++contextoRisco.current;if(bloqueada){setErro('Avaliação concluída: riscos disponíveis somente para consulta.');return}
   if(!editando||alterado){setErro('Clique em Salvar avaliação antes de cadastrar ou editar riscos.');return}
   if(!id){setRiscoInline({id:'',titulo:'',observacoes:'',classificacao:'nao_classificado',status:'aberto',perfil_exposicao:'',medidas_existentes:'',medidas_recomendadas:'',plano_acao:'',responsavel_acao:'',conclusao_tecnica:'',grupo_risco:'Ergonômicos',descricao:'',probabilidade:'',severidade:'',risco_puro:'',nivel_mitigacao:'',classificacao_final:'',lesoes_agravos:'',prazo:''});return}
