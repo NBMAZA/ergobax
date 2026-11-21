@@ -45,13 +45,13 @@ export default function FormularioRiscoCompleto({valor,alterar,desabilitado=fals
   rec.onerror=()=>setGravando(null);rec.onend=()=>setGravando(null);
   reconhecimento.current=rec;setGravando(chave);try{rec.start()}catch{setGravando(null)}
  }
- function rotulo(chave:keyof CamposRiscoCompleto,nome:string){return <span style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><span>{nome}</span><button type="button" aria-label={'Ditar '+nome} title={'Ditar '+nome} disabled={desabilitado} onClick={e=>{e.preventDefault();ditar(chave)}} style={{border:'1px solid #cbd5e1',borderRadius:6,padding:'4px 8px',background:'#eef4fa'}}>{gravando===chave?'■ Parar':'🎤'}</button></span>}
+ function rotuloComMicrofone(chave:keyof CamposRiscoCompleto,nome:string){return <span style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><span>{nome}</span><button type="button" aria-label={'Ditar '+nome} title={'Ditar '+nome} disabled={desabilitado} onClick={e=>{e.preventDefault();ditar(chave)}} style={{border:'1px solid #cbd5e1',borderRadius:6,padding:'4px 8px',background:'#eef4fa'}}>{gravando===chave?'■ Parar':'🎤'}</button></span>}
 
  return <div style={{display:'grid',gap:12}}>
  {grupos.map(grupo=><details key={grupo.titulo} open={grupo.titulo==='Identificação e exposição'} style={{border:'1px solid #cbd5e1',borderRadius:9,padding:12}}>
  <summary style={{cursor:'pointer',fontWeight:700}}>{grupo.titulo}</summary>
  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:12}}>
- {grupo.campos.map(([chave,rotulo])=><label key={chave} style={campo}>{rotulo(chave,rotulo)}
+ {grupo.campos.map(([chave,rotulo])=><label key={chave} style={campo}>{rotuloComMicrofone(chave,rotulo)}
  {(['probabilidade','severidade','risco_puro'].includes(chave))?
  <input style={entrada} type="number" min="0" step="any" disabled={desabilitado} value={valor[chave]} onChange={e=>mudar(chave,e.target.value)}/>:
  (['titulo','grupo_risco','nivel_mitigacao','responsavel_acao','prazo','classificacao_final'].includes(chave))?
