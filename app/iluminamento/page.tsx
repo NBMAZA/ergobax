@@ -28,8 +28,6 @@ export default function Iluminamento(){
  const [riscoDetalhes,setRiscoDetalhes]=useState({perfil_exposicao:'',conclusao_tecnica:'',medidas_existentes:'',medidas_recomendadas:'',plano_acao:'',responsavel_acao:'',classificacao:'nao_classificado',status:'aberto'});
  const [riscoEditando,setRiscoEditando]=useState<string|null>(null);
  const [gravandoRisco,setGravandoRisco]=useState('');const reconhecimentoRisco=useRef<{stop:()=>void}|null>(null);
- const riscoVozRef=useRef({titulo:'',observacoes:'',detalhes:riscoDetalhes});
- useEffect(()=>{riscoVozRef.current={titulo:riscoTitulo,observacoes:riscoObs,detalhes:riscoDetalhes}},[riscoTitulo,riscoObs,riscoDetalhes]);
  useEffect(()=>()=>{reconhecimentoRisco.current?.stop()},[]);
  function ditarRisco(campo:string){
   if(gravandoRisco){reconhecimentoRisco.current?.stop();reconhecimentoRisco.current=null;setGravandoRisco('');if(gravandoRisco===campo)return}
