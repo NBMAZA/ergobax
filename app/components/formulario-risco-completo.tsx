@@ -1,5 +1,5 @@
 'use client';
-import type {CSSProperties} from 'react';
+import {useEffect,useRef,useState,type CSSProperties} from 'react';
 
 export type CamposRiscoCompleto = {
  titulo:string; grupo_risco:string; perfil_exposicao:string; medidas_existentes:string;
@@ -26,12 +26,32 @@ const entrada:CSSProperties={width:'100%',boxSizing:'border-box',padding:9,borde
 export default function FormularioRiscoCompleto({valor,alterar,desabilitado=false}:{
  valor:CamposRiscoCompleto;alterar:(proximo:CamposRiscoCompleto)=>void;desabilitado?:boolean;
 }){
+ const [gravando,setGravando]=useState<keyof CamposRiscoCompleto|null>(null);
+ const reconhecimento=useRef<{stop:()=>void}|null>(null);
+ const valorRef=useRef(valor);const alterarRef=useRef(alterar);
+ useEffect(()=>{valorRef.current=valor;alterarRef.current=alterar},[valor,alterar]);
+ useEffect(()=>()=>{reconhecimento.current?.stop()},[]);
  const mudar=(chave:keyof CamposRiscoCompleto,v:string)=>alterar({...valor,[chave]:v});
+ function ditar(chave:keyof CamposRiscoCompleto){
+  if(gravando){reconhecimento.current?.stop();reconhecimento.current=null;setGravando(null);if(gravando===chave)return}
+  const api=window as unknown as {SpeechRecognition?:new()=>any;webkitSpeechRecognition?:new()=>any};
+  const Speech=api.SpeechRecognition||api.webkitSpeechRecognition;
+  if(!Speech){window.alert('Reconhecimento de voz indisponível neste navegador.');return}
+  const rec=new Speech();rec.lang='pt-BR';rec.interimResults=false;
+  rec.onresult=(evento:{results:{[n:number]:{[n:number]:{transcript:string}}}})=>{
+   const transcricao=evento.results[0][0].transcript;
+   const atual=valorRef.current;alterarRef.current({...atual,[chave]:[atual[chave],transcricao].filter(Boolean).join(' ')});
+  };
+  rec.onerror=()=>setGravando(null);rec.onend=()=>setGravando(null);
+  reconhecimento.current=rec;setGravando(chave);try{rec.start()}catch{setGravando(null)}
+ }
+ function rotulo(chave:keyof CamposRiscoCompleto,nome:string){return <span style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><span>{nome}</span><button type="button" aria-label={'Ditar '+nome} title={'Ditar '+nome} disabled={desabilitado} onClick={e=>{e.preventDefault();ditar(chave)}} style={{border:'1px solid #cbd5e1',borderRadius:6,padding:'4px 8px',background:'#eef4fa'}}>{gravando===chave?'■ Parar':'🎤'}</button></span>}
+
  return <div style={{display:'grid',gap:12}}>
  {grupos.map(grupo=><details key={grupo.titulo} open={grupo.titulo==='Identificação e exposição'} style={{border:'1px solid #cbd5e1',borderRadius:9,padding:12}}>
  <summary style={{cursor:'pointer',fontWeight:700}}>{grupo.titulo}</summary>
  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:12}}>
- {grupo.campos.map(([chave,rotulo])=><label key={chave} style={campo}>{rotulo}
+ {grupo.campos.map(([chave,rotulo])=><label key={chave} style={campo}>{rotulo(chave,rotulo)}
  {(['probabilidade','severidade','risco_puro'].includes(chave))?
  <input style={entrada} type="number" min="0" step="any" disabled={desabilitado} value={valor[chave]} onChange={e=>mudar(chave,e.target.value)}/>:
  (['titulo','grupo_risco','nivel_mitigacao','responsavel_acao','prazo','classificacao_final'].includes(chave))?
