@@ -102,7 +102,7 @@ export default function ColetaCognitiva(){
      </section>
      <section style={{border:'1px solid #cbd5e1',borderRadius:10,background:'#fff',padding:16}}>
       <h2 style={{margin:'0 0 12px'}}>Fatores cognitivos</h2>
-      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:18}}>{catalogo.map(([cod])=><button key={cod} type="button" onClick={()=>{setAtivo(cod);setRiscoInline(null);setErro('');setSucesso('')}} style={{...btn,padding:'9px 12px',background:ativo===cod?'#137c59':'#0c2c4c'}}>{cod}</button>)}</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:18}}>{catalogo.map(([cod,descricao])=><button key={cod} title={`${cod} — ${descricao}`} aria-label={`${cod} — ${descricao}`} type="button" onClick={()=>{setAtivo(cod);setRiscoInline(null);setErro('');setSucesso('')}} style={{...btn,padding:'9px 12px',background:ativo===cod?'#137c59':'#0c2c4c'}}>{cod}</button>)}</div>
       <h3 style={{margin:'0 0 16px'}}>{ativo} — {selecionado?.[1]}</h3>
       <div style={{display:'grid',gap:14,maxWidth:850}}>
        <label style={{display:'grid',gap:5,fontWeight:600}}>Situação observada<select style={campo} value={f.situacao} onChange={e=>atualizar('situacao',e.target.value)}><option value="nao_avaliado">Não avaliado</option><option value="presente">Exigência presente</option><option value="ausente">Exigência não identificada</option></select></label>
