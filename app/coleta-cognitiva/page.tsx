@@ -68,7 +68,7 @@ export default function ColetaCognitiva(){
  return <div className="ergobax-gestao-page">
   <header style={{padding:'6px 16px',minHeight:56}}><nav style={{minHeight:44}}><span className="ergobax-modulo-marca"><img style={{maxHeight:42,width:'auto'}} src="/ergobax_logo_transparente.png" alt="ERGOBAX"/><strong>Coleta Ergonômica — Cognitiva</strong></span><Link href="/" style={{marginLeft:'auto'}}>← Voltar ao painel</Link></nav></header>
   <main style={{maxWidth:1400,margin:'12px auto',padding:'12px 20px'}}>
-   <div style={{background:'#eef7f4',padding:'10px 14px',borderRadius:8,borderLeft:'4px solid #239b65',marginBottom:12}}><strong>CLIENTE ATIVO</strong><div>{cliente?.razao_social||'Nenhuma empresa selecionada'}</div></div>
+   
    {tela==='lista'?<section>
     <h1>Coleta Cognitiva</h1>
     {erro&&<p role="alert" style={{color:'#b91c1c',fontWeight:700}}>{erro}</p>}
