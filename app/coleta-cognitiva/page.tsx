@@ -1,0 +1,56 @@
+'use client';
+import {useEffect,useState,type FormEvent} from 'react';
+import Link from 'next/link';
+import {supabase} from '../../lib/supabase';
+import {useClienteAtivo} from '../use-cliente-ativo';
+
+const catalogo=[
+['COG-01','Sobrecarga mental'],
+['COG-02','Exigência elevada de atenção'],
+['COG-03','Necessidade de concentração prolongada'],
+['COG-04','Exigência elevada de memória'],
+['COG-05','Grande quantidade de informações'],
+['COG-06','Tomada de decisões complexas'],
+['COG-07','Necessidade de raciocínio rápido'],
+['COG-08','Múltiplas tarefas cognitivas simultâneas'],
+['COG-09','Alternância frequente entre tarefas'],
+['COG-10','Interrupções constantes'],
+['COG-11','Vigilância contínua'],
+['COG-12','Necessidade de memorizar procedimentos sem apoio'],
+['COG-13','Necessidade de detectar sinais ou alarmes rapidamente'],
+['COG-14','Incompatibilidade entre complexidade da tarefa e recursos disponíveis'],
+['COG-15','Ritmo cognitivo elevado']
+] as const;
+type Fator={situacao:'nao_avaliado'|'presente'|'ausente';descricao:string;observacoes:string};
+type Registro={id:string;cliente_id:string;cargo_id:string;titulo:string;data_avaliacao:string;status:'em_elaboracao'|'concluida';vigente:boolean;fatores:Record<string,Fator>;observacoes:string|null};
+type Cargo={id:string;codigo:string;nome:string;tipo_cargo:string|null};
+type Cliente={id:string;razao_social:string;consultoria_id:string};
+const vazio=():Fator=>({situacao:'nao_avaliado',descricao:'',observacoes:''});
+export default function ColetaCognitiva(){
+ const {clienteAtivo}=useClienteAtivo();
+ const [clientes,setClientes]=useState<Cliente[]>([]),[cargos,setCargos]=useState<Cargo[]>([]),[registros,setRegistros]=useState<Registro[]>([]);
+ const [editId,setEditId]=useState<string|null>(null),[tela,setTela]=useState<'lista'|'form'>('lista');
+ const [cargoId,setCargoId]=useState(''),[titulo,setTitulo]=useState('Avaliação cognitiva'),[data,setData]=useState(new Date().toISOString().slice(0,10));
+ const [status,setStatus]=useState<'em_elaboracao'|'concluida'>('em_elaboracao'),[vigente,setVigente]=useState(false);
+ const [fatores,setFatores]=useState<Record<string,Fator>>({}),[ativo,setAtivo]=useState('COG-01'),[observacoes,setObservacoes]=useState('');
+ const [erro,setErro]=useState(''),[sucesso,setSucesso]=useState(''),[busy,setBusy]=useState(false),[original,setOriginal]=useState('');
+ const cliente=clientes.find(c=>c.id===clienteAtivo);
+ const snapshot=()=>JSON.stringify({cargoId,titulo,data,status,vigente,fatores,observacoes});
+ function avisoSaida(){return tela!=='form'||snapshot()===original||window.confirm('Existem alterações não salvas. Deseja descartá-las?')}
+ useEffect(()=>{(async()=>{const db=supabase();const {data:{user}}=await db.auth.getUser();if(!user){setErro('Entre no Portal para acessar a Coleta Cognitiva.');return}const r=await db.from('clientes').select('id,razao_social,consultoria_id');if(r.error)setErro(r.error.message);else setClientes(r.data||[])})()},[]);
+ useEffect(()=>{setTela('lista');setEditId(null);setErro('');setSucesso('');if(!clienteAtivo){setCargos([]);setRegistros([]);return}let cancel=false;(async()=>{const db=supabase();const [a,b]=await Promise.all([db.from('cargos').select('id,codigo,nome,tipo_cargo').eq('cliente_id',clienteAtivo).order('nome'),db.from('avaliacoes_cognitivas').select('*').eq('cliente_id',clienteAtivo).order('created_at',{ascending:false})]);if(cancel)return;if(a.error||b.error)setErro(a.error?.message||b.error?.message||'Falha ao carregar dados');else{setCargos(a.data||[]);setRegistros(b.data||[])}})();return()=>{cancel=true}},[clienteAtivo]);
+ async function recarregar(){if(!clienteAtivo)return;const r=await supabase().from('avaliacoes_cognitivas').select('*').eq('cliente_id',clienteAtivo).order('created_at',{ascending:false});if(r.error)throw r.error;setRegistros(r.data||[])}
+ function novo(){if(!avisoSaida())return;setEditId(null);setCargoId('');setTitulo('Avaliação cognitiva');const hoje=new Date().toISOString().slice(0,10);setData(hoje);setStatus('em_elaboracao');setVigente(false);setFatores({});setObservacoes('');setAtivo('COG-01');setOriginal(JSON.stringify({cargoId:'',titulo:'Avaliação cognitiva',data:hoje,status:'em_elaboracao',vigente:false,fatores:{},observacoes:''}));setTela('form');setErro('');setSucesso('')}
+ function editar(r:Registro){if(!avisoSaida())return;setEditId(r.id);setCargoId(r.cargo_id);setTitulo(r.titulo);setData(r.data_avaliacao);setStatus(r.status);setVigente(r.vigente);setFatores(r.fatores||{});setObservacoes(r.observacoes||'');setAtivo('COG-01');setOriginal(JSON.stringify({cargoId:r.cargo_id,titulo:r.titulo,data:r.data_avaliacao,status:r.status,vigente:r.vigente,fatores:r.fatores||{},observacoes:r.observacoes||''}));setTela('form');setErro('');setSucesso('')}
+ function voltar(){if(!avisoSaida())return;setTela('lista');setErro('');setSucesso('')}
+ function atualizar(k:keyof Fator,v:string){setFatores(p=>({...p,[ativo]:{...(p[ativo]||vazio()),[k]:v}}))}
+ async function salvar(e:FormEvent){e.preventDefault();setErro('');setSucesso('');if(!cliente||!cargoId){setErro('Selecione uma empresa ativa e um cargo.');return}if(!titulo.trim()||!data){setErro('Informe título e data da avaliação.');return}setBusy(true);try{
+ const db=supabase();const payload={consultoria_id:cliente.consultoria_id,cliente_id:cliente.id,cargo_id:cargoId,titulo:titulo.trim(),data_avaliacao:data,status,vigente,fatores,observacoes};
+ // Somente uma avaliação vigente por cargo; não alterar registros anteriores automaticamente.
+ if(vigente&&registros.some(r=>r.cargo_id===cargoId&&r.vigente&&r.id!==editId))throw Error('Este cargo já possui uma avaliação vigente. Desmarque a anterior antes de definir outra.');
+ const res=editId?await db.from('avaliacoes_cognitivas').update(payload).eq('id',editId).eq('cliente_id',cliente.id).select('id').single():await db.from('avaliacoes_cognitivas').insert(payload).select('id').single();
+ if(res.error)throw res.error;setEditId(res.data.id);await recarregar();setOriginal(snapshot());setSucesso('Avaliação cognitiva salva com sucesso.');
+ }catch(e){setErro(e instanceof Error?e.message:'Erro ao salvar avaliação')}finally{setBusy(false)}}
+ const f=fatores[ativo]||vazio();
+ return <div className="ergobax-gestao-page"><header style={{padding:'6px 16px',minHeight:56}}><nav style={{minHeight:44}}><span className="ergobax-modulo-marca"><img style={{maxHeight:42,width:'auto'}} src="/ergobax_logo_transparente.png" alt="ERGOBAX"/><strong>Coleta Ergonômica — Cognitiva</strong></span><Link href="/" style={{marginLeft:'auto'}}>← Voltar ao painel</Link></nav></header><main className="cargos-page" style={{maxWidth:1380,margin:'16px auto',padding:'12px 20px'}}><h1>Coleta Cognitiva — COG-01 a COG-15</h1><div style={{background:'#eef7f4',padding:14,borderRadius:8,borderLeft:'4px solid #239b65'}}><strong>EMPRESA EM ANÁLISE</strong><div>{cliente?.razao_social||'Nenhuma empresa selecionada'}</div></div>{erro&&<p role="alert" style={{color:'#b91c1c',fontWeight:700}}>{erro}</p>}{sucesso&&<p role="status" style={{color:'#137c59',fontWeight:700}}>{sucesso}</p>}{tela==='lista'?<><div style={{margin:'20px 0'}}><button type="button" disabled={!cliente} onClick={novo}>+ Nova avaliação cognitiva</button></div><h2>Avaliações por cargo</h2><table><thead><tr><th>Cargo</th><th>Avaliação</th><th>Data</th><th>Status</th><th>Vigente</th><th>Ação</th></tr></thead><tbody>{registros.map(r=><tr key={r.id}><td>{cargos.find(c=>c.id===r.cargo_id)?.nome||'Cargo não encontrado'}</td><td>{r.titulo}</td><td>{r.data_avaliacao}</td><td>{r.status==='concluida'?'Concluída':'Em elaboração'}</td><td>{r.vigente?'Sim':'Não'}</td><td><button type="button" onClick={()=>editar(r)}>Abrir</button></td></tr>)}</tbody></table>{!registros.length&&<p>Nenhuma avaliação cognitiva cadastrada.</p>}</>:<><div style={{display:'flex',gap:10,margin:'18px 0'}}><button type="button" onClick={voltar}>← Voltar à lista</button></div><form className="cargos-form" onSubmit={salvar}><h2>{editId?'Editar avaliação':'Nova avaliação'}</h2><label>Cargo *<select required value={cargoId} onChange={e=>setCargoId(e.target.value)}><option value="">Selecione um cargo</option>{cargos.map(c=><option key={c.id} value={c.id}>{c.codigo} — {c.nome} ({c.tipo_cargo||'não classificado'})</option>)}</select></label><label>Título *<input required value={titulo} onChange={e=>setTitulo(e.target.value)}/></label><label>Data da avaliação *<input type="date" required value={data} onChange={e=>setData(e.target.value)}/></label><label>Status<select value={status} onChange={e=>setStatus(e.target.value as 'em_elaboracao'|'concluida')}><option value="em_elaboracao">Em elaboração</option><option value="concluida">Concluída</option></select></label><label style={{display:'flex',gap:8,alignItems:'center'}}><input type="checkbox" checked={vigente} onChange={e=>setVigente(e.target.checked)}/> Avaliação vigente</label><h3>Catálogo de fatores cognitivos</h3><div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>{catalogo.map(([cod])=><button key={cod} type="button" onClick={()=>setAtivo(cod)} style={{background:ativo===cod?'#137c59':'#e6f5ed',color:ativo===cod?'white':'#125d45',padding:'8px 12px',borderRadius:7}}>{cod}</button>)}</div><h3>{ativo} — {catalogo.find(([cod])=>cod===ativo)?.[1]}</h3><label>Situação observada<select value={f.situacao} onChange={e=>atualizar('situacao',e.target.value)}><option value="nao_avaliado">Não avaliado</option><option value="presente">Exigência presente</option><option value="ausente">Exigência não identificada</option></select></label><label>Descrição das condições observadas<textarea rows={4} value={f.descricao} onChange={e=>atualizar('descricao',e.target.value)}/></label><label>Observações técnicas do fator<textarea rows={3} value={f.observacoes} onChange={e=>atualizar('observacoes',e.target.value)}/></label><p style={{fontSize:13,color:'#64748b'}}>A presença de exigência cognitiva não determina, isoladamente, a existência de risco. Formulários detalhados e integração com Riscos Identificados serão validados com a Celina em etapa posterior.</p><label>Observações gerais da avaliação<textarea rows={4} value={observacoes} onChange={e=>setObservacoes(e.target.value)}/></label><div style={{display:'flex',gap:10,marginTop:18}}><button type="submit" disabled={busy}>{busy?'Salvando...':'Salvar avaliação'}</button><button type="button" onClick={voltar}>Voltar à lista</button></div></form></>}</main></div>
+}
