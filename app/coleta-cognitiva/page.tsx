@@ -89,14 +89,14 @@ export default function ColetaCognitiva(){
    </section>:<section>
     <h1 style={{marginBottom:8}}>Avaliação Cognitiva — {historica?'HISTÓRICA (somente consulta)':vigente?'VIGENTE':status==='concluida'?'CONCLUÍDA (não vigente)':'EM ELABORAÇÃO'}</h1>
     {acoes('topo')}
-    <form id="cog-form" onSubmit={salvar} style={{display:'grid',gap:12}}><fieldset disabled={somenteLeitura} style={{border:0,padding:0,margin:0,minWidth:0,display:'grid',gap:12}}>
+    <form id="cog-form" onSubmit={salvar} style={{display:'grid',gap:12}}>
      <section style={{border:'1px solid #cbd5e1',borderRadius:10,background:'#f8fafc',padding:14}}>
       <button type="button" onClick={()=>setIdentificacaoAberta(v=>!v)} style={{...btn,background:'transparent',color:'#0c2c4c',padding:'4px 0',width:'100%',textAlign:'left'}}>Identificação — {cargos.find(c=>c.id===cargoId)?.nome||'Selecione um cargo'} · {data} <span style={{float:'right'}}>{identificacaoAberta?'▲ Recolher':'▼ Expandir'}</span></button>
       {identificacaoAberta&&<div style={{display:'grid',gap:12,marginTop:14,maxWidth:700}}>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Cargo *<select style={campo} required value={cargoId} onChange={e=>setCargoId(e.target.value)}><option value="">Selecione um cargo</option>{cargos.map(c=><option key={c.id} value={c.id}>{c.codigo} — {c.nome} ({c.tipo_cargo||'não classificado'})</option>)}</select></label>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Título *<input style={campo} required value={titulo} onChange={e=>setTitulo(e.target.value)}/></label>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Data da avaliação *<input style={campo} type="date" required value={data} onChange={e=>setData(e.target.value)}/></label>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Status<select style={campo} value={status} onChange={e=>setStatus(e.target.value as 'em_elaboracao'|'concluida')}><option value="em_elaboracao">Em elaboração</option><option value="concluida">Concluída</option></select></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Cargo *<select disabled={somenteLeitura} style={campo} required value={cargoId} onChange={e=>setCargoId(e.target.value)}><option value="">Selecione um cargo</option>{cargos.map(c=><option key={c.id} value={c.id}>{c.codigo} — {c.nome} ({c.tipo_cargo||'não classificado'})</option>)}</select></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Título *<input disabled={somenteLeitura} style={campo} required value={titulo} onChange={e=>setTitulo(e.target.value)}/></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Data da avaliação *<input disabled={somenteLeitura} style={campo} type="date" required value={data} onChange={e=>setData(e.target.value)}/></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Status<select disabled={somenteLeitura} style={campo} value={status} onChange={e=>setStatus(e.target.value as 'em_elaboracao'|'concluida')}><option value="em_elaboracao">Em elaboração</option><option value="concluida">Concluída</option></select></label>
        <p style={{fontWeight:700}}>Situação: {historica?'Histórica — somente consulta':vigente?'Vigente':'Não vigente'}. Para definir uma avaliação concluída como vigente, utilize o botão na lista.</p>
       </div>}
      </section>
@@ -106,8 +106,8 @@ export default function ColetaCognitiva(){
       <h3 style={{margin:'0 0 16px'}}>{ativo} — {selecionado?.[1]}</h3>
       <div style={{display:'grid',gap:14,maxWidth:850}}>
        <label style={{display:'grid',gap:5,fontWeight:600}}>Situação observada<select style={campo} value={f.situacao} onChange={e=>atualizar('situacao',e.target.value)}><option value="nao_avaliado">Não avaliado</option><option value="presente">Exigência presente</option><option value="ausente">Exigência não identificada</option></select></label>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Descrição das condições observadas<textarea style={campo} rows={4} value={f.descricao} onChange={e=>atualizar('descricao',e.target.value)}/></label>
-       <label style={{display:'grid',gap:5,fontWeight:600}}>Observações técnicas do fator<textarea style={campo} rows={3} value={f.observacoes} onChange={e=>atualizar('observacoes',e.target.value)}/></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Descrição das condições observadas<textarea disabled={somenteLeitura} style={campo} rows={4} value={f.descricao} onChange={e=>atualizar('descricao',e.target.value)}/></label>
+       <label style={{display:'grid',gap:5,fontWeight:600}}>Observações técnicas do fator<textarea disabled={somenteLeitura} style={campo} rows={3} value={f.observacoes} onChange={e=>atualizar('observacoes',e.target.value)}/></label>
       </div>
       <p style={{fontSize:13,color:'#64748b'}}>A presença de exigência cognitiva não determina, isoladamente, a existência de risco.</p><section style={{marginTop:18,padding:14,background:'#f1f7fa',border:'1px solid #cbd5e1',borderRadius:8}}>
  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}><strong>Riscos cadastrados neste fator ({riscosFator.length})</strong><button type="button" style={{...btn,background:'#137c59'}} onClick={adicionarRisco} disabled={somenteLeitura}>+ Adicionar Risco</button></div>
@@ -126,8 +126,8 @@ export default function ColetaCognitiva(){
  {riscosFator.map(r=><div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,borderTop:'1px solid #cbd5e1',padding:'10px 0'}}><span><strong>{r.titulo}</strong> — {r.classificacao}</span><button type="button" style={btn} onClick={()=>editarRisco(r.id)} disabled={somenteLeitura}>{somenteLeitura?'Somente consulta':'Editar risco'}</button></div>)}
  </section>
      </section>
-     <section style={{padding:12,background:'#f8fafc',borderRadius:8}}><label style={{display:'grid',gap:5,fontWeight:600}}>Observações gerais da avaliação<textarea style={campo} rows={3} value={observacoes} onChange={e=>setObservacoes(e.target.value)}/></label></section>
-    </fieldset></form>
+     <section style={{padding:12,background:'#f8fafc',borderRadius:8}}><label style={{display:'grid',gap:5,fontWeight:600}}>Observações gerais da avaliação<textarea disabled={somenteLeitura} style={campo} rows={3} value={observacoes} onChange={e=>setObservacoes(e.target.value)}/></label></section>
+    </form>
     {acoes('rodape')}
    </section>}
   </main>
